@@ -1,15 +1,21 @@
-pipeline{
-        agent any
-        stages{
-            stage('Make Directory'){
-                steps{
-                    sh "mkdir ~/jenkins-tutorial-test"
-                }
-            }
-            stage('Make Files'){
-                steps{
-                    sh "touch ~/jenkins-tutorial-test/file1 ~/jenkins-tutorial-test/file2"
-                }
-            }
-        }
+pipeline {
+	// blah
+	agent any
+	stages {
+		stage('pre-build clean') {
+			steps {
+				sh 'docker system prune -f'
+			}
+		}
+		stage('build containers') {
+			steps {
+				sh '''
+				docker network create duo-net
+				docker build -t duo-app:v1 .
+				docker run -d --network duo-net --name flask-app duo-app:v1
+				docker run -d --network duo-net --name nginx --mount type=bind,source=$(pwd)/nginx.conf,target=/etc/nginx/nginx.conf -p 80:80 nginx:alpine
+				'''
+			}
+		}
+	}
 }
